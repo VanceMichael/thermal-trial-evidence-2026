@@ -736,5 +736,9 @@
       "key": 0
     }
   },
-  "browser": false
+  "browser": false,
+  "objects": {
+    "g2.gw": "application/octet-stream",
+    "h3.gw": "application/octet-stream"
+  }
 }

@@ -52,3 +52,11 @@ test('网关对启动代、留存范围和真实读取额度分别校验', async
   assert.equal((await fetch(stream + '&from=2&until=4')).headers.get('x-remaining-seconds'),'0')
   assert.equal((await fetch(stream + '&from=4&until=6')).status,429)
 })
+
+test('资料索引能领取合成原件', async t => {
+  const { root } = await listen(t)
+  const response = await fetch(root + "/media/g2.gw")
+  assert.equal(response.status, 200)
+  assert.equal(response.headers.get('content-type'), "application/octet-stream")
+  assert.ok((await response.arrayBuffer()).byteLength >= 13)
+})

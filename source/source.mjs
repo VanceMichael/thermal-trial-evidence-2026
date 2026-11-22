@@ -75,6 +75,12 @@ export function createSource() {
         selected = release
         return json(response, 200, { edition: selected.edition })
       }
+      const object = /^\/media\/([\w.-]+)$/.exec(url.pathname)
+      if (object && request.method === 'GET') {
+        if (!source.objects || !Object.hasOwn(source.objects, object[1])) return json(response, 404, { error: '没有该原件' })
+        const body = await readFile(new URL('../records/media/' + object[1], import.meta.url))
+        return send(response, 200, source.objects[object[1]], body)
+      }
       if (request.method !== 'GET') return json(response, 405, { error: '不支持该操作' })
       if (url.pathname === '/catalog') {
         return json(response, 200, { edition: selected.edition, streams: Object.keys(selected.streams) })
