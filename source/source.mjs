@@ -1,4 +1,5 @@
 import { newGateway } from './heat-gateway.mjs'
+import { samplePage } from './heat-packet.mjs'
 import http from 'node:http'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
@@ -93,6 +94,9 @@ export function createSource() {
         const headers = { ...page.headers, 'X-Edition': edition.edition, ETag: '"' + page.fingerprint + '"' }
         if (request.headers['if-none-match'] === headers.ETag) {
           return send(response, 304, 'text/tab-separated-values; charset=utf-8', '', headers)
+        }
+        if (match[1] === 'samples') {
+          return send(response, 200, 'application/octet-stream', samplePage(page.rows), headers)
         }
         return send(response, 200, 'text/tab-separated-values; charset=utf-8',
           page.rows.map(row => row.join('\t')).join('\n') + (page.rows.length ? '\n' : ''), headers)
