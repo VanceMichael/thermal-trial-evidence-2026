@@ -1,0 +1,13 @@
+{
+  "name": "heat-trial",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "22.23.4"
+  },
+  "scripts": {
+    "source": "node source/source.mjs",
+    "test": "node --test"
+  }
+}
