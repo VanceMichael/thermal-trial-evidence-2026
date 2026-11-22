@@ -1,3 +1,4 @@
+import { newGateway } from './heat-gateway.mjs'
 import http from 'node:http'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
@@ -33,6 +34,7 @@ function pageOf(url, name, edition) {
   const from = url.searchParams.get('from')
   const until = url.searchParams.get('until')
   const filter = source.filters[name]
+  const generation = url.searchParams.get('generation')
   if (((from !== null || until !== null) && filter?.clock === undefined) || (key !== null && !filter)) {
     return { code: 422 }
   }
@@ -40,11 +42,12 @@ function pageOf(url, name, edition) {
     return { code: 422 }
   }
   const visible = allRows.filter(row =>
+    (name !== 'samples' || generation === row[1]) &&
     (key === null || row[filter.key] === key) &&
     (from === null || Number(row[filter.clock]) >= Number(from)) &&
     (until === null || Number(row[filter.clock]) < Number(until))
   )
-  const fingerprint = id(JSON.stringify([edition.edition, name, key, from, until]))
+  const fingerprint = id(JSON.stringify([edition.edition, name, key, from, until, generation]))
   const cursors = visible.map((_, i) => id(fingerprint + ':' + i))
   const cursor = url.searchParams.get('cursor')
   const offset = cursor === null ? 0 : cursors.indexOf(cursor)
@@ -60,6 +63,7 @@ function pageOf(url, name, edition) {
 
 export function createSource() {
   let selected = source.editions[0]
+  const gate = newGateway()
   const server = http.createServer(async (request, response) => {
     try {
       const url = new URL(request.url, 'http://localhost')
@@ -80,6 +84,12 @@ export function createSource() {
         if (!edition) return json(response, 404, { error: '没有该资料版' })
         const page = pageOf(url, match[1], edition)
         if (page.code !== 200) return json(response, page.code, { error: '资料、筛选范围或继续标记无效' })
+        if (match[1] === 'samples') {
+          if (edition !== selected) return json(response, 410, {message:'资料版已越过可读窗口'})
+          const quota = gate(url, edition, page)
+          if (quota.code !== 200) return json(response, quota.code, quota)
+          response.setHeader('X-Remaining-Seconds', quota.remaining)
+        }
         const headers = { ...page.headers, 'X-Edition': edition.edition, ETag: '"' + page.fingerprint + '"' }
         if (request.headers['if-none-match'] === headers.ETag) {
           return send(response, 304, 'text/tab-separated-values; charset=utf-8', '', headers)

@@ -36,3 +36,13 @@ test('来源资料支持修订隔离与逐页领取', async t => {
   assert.equal(new Set(rows).size,rows.length)
   assert.ok(rows.some(row => row.split('\t').includes("cancelled")))
 })
+
+test('网关对启动代、留存范围和真实读取额度分别校验', async t => {
+  const { root } = await listen(t)
+  const stream = root + '/records/samples?key=G&generation=a'
+  assert.equal((await fetch(stream + '&from=-1&until=1')).status,410)
+  assert.equal((await fetch(stream + '&from=0&until=2')).headers.get('x-remaining-seconds'),'2')
+  assert.equal((await fetch(stream + '&from=0&until=2')).headers.get('x-remaining-seconds'),'2')
+  assert.equal((await fetch(stream + '&from=2&until=4')).headers.get('x-remaining-seconds'),'0')
+  assert.equal((await fetch(stream + '&from=4&until=6')).status,429)
+})
