@@ -8,6 +8,7 @@
   },
   "scripts": {
     "source": "node source/source.mjs",
+    "duty": "node duty/cli.mjs",
     "test": "node --test"
   }
 }
